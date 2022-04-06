@@ -1,4 +1,4 @@
-# The S3 bucket name where the Holidays.csv is stored
+# The S3 bucket name where the Holidays.csv is located
 s3_bucket="replace_with_s3_bucket_name"
 aws_cli_profile="default" # replace default with profile name, if using a non-default profile name
 
