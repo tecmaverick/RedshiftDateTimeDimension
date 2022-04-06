@@ -69,6 +69,6 @@ Please refer to the inline comments in DateDimension.sql
 
 
 ## Links
-[1] AWS CLI - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-[2] S3 Bucket Permissions - https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html#authorizing-redshift-service-creating-an-iam-role
+[1] AWS CLI - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html  
+[2] S3 Bucket Permissions - https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html#authorizing-redshift-service-creating-an-iam-role  
 [3] Redshift Default IAM Role - https://docs.aws.amazon.com/redshift/latest/mgmt/default-iam-role.html#set-default-iam
