@@ -38,33 +38,33 @@ Please refer to the inline comments in DateDimension.sql
 
 ## FAQs
 
-1. How are federal holidays calculated?
-   All federal holidays are sourced from 'holidays' Python library  ( https://pypi.org/project/holidays/ ) 
-   Those missing ones are manually loaded from DateDimensionHoliday.sql. 
+1. How are federal holidays calculated?  
+   All federal holidays are sourced from 'holidays' Python library  ( https://pypi.org/project/holidays/ )  
+   Those missing ones are manually loaded from DateDimensionHoliday.sql.  
    For US the following holidays were loaded separately - Juneteenth, Good Friday (for US), Easter Sunday, Martin Luther King Jr. Day
 
-2. How is Easter date calculated?
+2. How is Easter date calculated?  
    All easter dates are based on Western calendar, and is pulled from Python dateutil library ( https://dateutil.readthedocs.io/en/stable/easter.html )
 
-3. Can I set any date range in the script?
+3. Can I set any date range in the script?  
    Yes you can. The script is tested for date range from 1st January 1970 to 31st December 2069. I recommend testing for date ranges outside these.
 
-4. Is it possible to generate holiday list for other countries?
+4. Is it possible to generate holiday list for other countries?  
    Yes, as long as "Holidays" python library supports it. In "PublicHolidays/main.py" any supported country abbreviation can be added to "countries" list.
 
-5. For the month of February, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated when current year is leap year? 
-   
-   Current Date: 2008-02-29 (2008 is a leap year, that has 29 days in February). 
-   'ly_mtd_start_date' will be '2007-02-01'
+5. For the month of February, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated when current year is leap year?  
+   Current Date: 2008-02-29 (2008 is a leap year, that has 29 days in February).  
+   'ly_mtd_start_date' will be '2007-02-01'  
    'ly_mtd_end_date'   will be '2007-03-01' This is because prior year February had 29 days and current year only 28, which moves the date to next month.
       
 
-6. For the month of February after leap year, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated? 
+6. For the month of February after leap year, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated?  
+    
+    Current Date: 2009-02-28 (2009 is a year after leap year, which has only 28 days in February).  
+    'ly_mtd_start_date' will be '2009-02-01'  
+    'ly_mtd_end_date'   will be '2007-02-29'  
    
-   Current Date: 2009-02-28 (2009 is a year after leap year, which has only 28 days in February). 
-   'ly_mtd_start_date' will be '2009-02-01'
-   'ly_mtd_end_date'   will be '2007-02-29' 
-   This may cause skew in reports comparing current month over prior year month, because of a day more.
+   This may cause skew in reports comparing current month over prior year month, because of a day more.  
    Use 'ly_mtd_end_date_actual' to exactly match the number of days as current month.
 
 
