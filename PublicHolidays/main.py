@@ -1,5 +1,5 @@
 # ************************************************************************************************************
-# Pulls federal holidays for US and Australia from from 1970-01-01 till 2069-12-31 (100 Years)
+# Pulls federal holidays for US and Australia from 1970-01-01 till 2069-12-31 (100 Years)
 # and creates file named "Holidays.csv" in the same directory as main.py
 # 
 # Author: Abraham
