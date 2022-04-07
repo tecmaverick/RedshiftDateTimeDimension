@@ -156,7 +156,7 @@ CREATE TABLE public.dim_date(
   au_fiscal_month     smallint NOT NULL,    -- Fiscal MTD
   au_key_fiscal_month char(6) NOT NULL,     -- Fiscal year with month. Ex: 202101
   au_fiscal_month_seq smallint NOT NULL,    -- Sequence of numbers by fiscal month, begining from calendar start date till end.  Eg 1970-01-01 till 2050-01-01.
-                                              -- This exactly corresponds to the month_seq
+
 
   au_fiscal_quarter           smallint NOT NULL,  -- Quarter number 1,2,3,4       
   au_fiscal_quarter_abbrv     char(2) NOT NULL,   -- Quarter abbreviation Q1, Q2, Q3, Q4  
@@ -178,7 +178,7 @@ CREATE TABLE public.dim_date(
   
   us_fiscal_month     smallint NOT NULL,
   us_fiscal_month_seq smallint NOT NULL,  -- Sequence of numbers by fiscal month, begining from calendar start date till end.  Eg 1970-01-01 till 2050-01-01
-  us_key_fiscal_month char(6) NOT NULL,   -- Fiscal year with quarter. Ex: 20211 Note: This exactly corresponds to the month_seq
+  us_key_fiscal_month char(6) NOT NULL,   -- Fiscal year with quarter. Ex: 20211 (Fiscalyear + FiscalMonth)
 
   us_fiscal_quarter             smallint NOT NULL, 
   us_key_fiscal_quarter         char(2) NOT NULL,   -- Quarter abbreviation Q1, Q2, Q3, Q4  
@@ -521,7 +521,7 @@ SELECT
 
 
     --===========================================================================
-    -- Fiscal Year & Quarter Australia - Starts from 1 July and ends on following year 30th June
+    -- Australia - Fiscal Year & Quarter  - Starts from 1st July and ends on following year 30th June
 
     -- Set AU fiscal year, if current month is on or after July, then set fiscal year to current year, else prior year
     case when month >= 7 then year else year - 1 end as au_fiscal_year,
@@ -582,7 +582,7 @@ SELECT
 
 
     --===========================================================================
-    -- Fiscal federal Year & Quarter USA  - Starts from 1 October and ends on following year 30th September
+    -- Fiscal federal Year & Quarter USA  - Starts from 1st October and ends on following year 30th September
 
     -- Set USA fiscal year, if current month is on or after July, then set fiscal year to current year, else prior year
     case when month >= 10 then year else year - 1 end as us_fiscal_year,
@@ -694,7 +694,7 @@ FROM
 --===========================================================================
 -- Update Sequence fields for 
 -- Calendar year/semester/quarter/month/week 
--- Fiscal year/quarter/month 
+-- Fiscal year 
 
 with seq as (
   select cal_date ,
@@ -707,12 +707,7 @@ with seq as (
   		 dense_rank() over(order by year) 		as year_seq_val,
   
   		 dense_rank() over(order by au_fiscal_year) 	as au_fiscal_year_seq_val,
-  		 dense_rank() over(order by au_key_fiscal_month) 	as au_fiscal_month_seq_val,  
-  		 dense_rank() over(order by au_key_fiscal_long_quarter) as au_fiscal_quarter_seq_val, 
-
   		 dense_rank() over(order by us_fiscal_year) 	as us_fiscal_year_seq_val,
-  		 dense_rank() over(order by us_key_fiscal_month) 	as us_fiscal_month_seq_val,  
-  		 dense_rank() over(order by us_key_fiscal_quarter_long) as us_fiscal_quarter_seq_val
   from
   	dim_date
   )
@@ -724,16 +719,106 @@ update dim_date set
     semester_seq = semester_seq_val,
     year_seq = year_seq_val,
     
-    au_fiscal_year_seq = au_fiscal_year_seq_val,
-    au_fiscal_month_seq = au_fiscal_month_seq_val,
-    au_fiscal_quarter_seq = au_fiscal_quarter_seq_val,
-    
+    au_fiscal_year_seq = au_fiscal_year_seq_val,    
     us_fiscal_year_seq = us_fiscal_year_seq_val,
-    us_fiscal_month_seq = us_fiscal_month_seq_val,
-    us_fiscal_quarter_seq = us_fiscal_quarter_seq_val
     
 from seq where seq.cal_date = dim_date.cal_date ;
 
-COMMIT TRANSACTION ;
+--===========================================================================
+-- Update field au_fiscal_month_seq. 
+-- The au_fiscal_month_seq must correspond to fiscal month number, 
+-- and should increment till the last record in the date dimension table
+
+with t_au_fiscal_start_date as ( 
+    -- Get the very fist au_fiscal_year_start_date in the table   
+    select au_fiscal_year_start_date from dim_date where id_seq = 1
+  ),
+au_fiscal_month_logic as ( 
+    --  Join t_au_fiscal_start_date with every record in dim_date  
+    select 
+      id_seq,
+      -- Substract months from the au_fiscal_year_start_date in the very first record
+      datediff(month, t.au_fiscal_year_start_date, cal_date ) + 1 new_au_fiscal_month 
+  from 
+    t_au_fiscal_start_date t,
+      dim_date dd
+  order by dd.cal_date
+  )
+update 
+  dim_date 
+  SET au_fiscal_month_seq = t.new_au_fiscal_month 
+  from au_fiscal_month_logic t 
+  where dim_date.id_seq = t.id_seq
+
+--===========================================================================
+-- Update field us_fiscal_month_seq. 
+-- The us_fiscal_month_seq must correspond to fiscal month number, 
+-- and must increment till the last record in the date dimension table
+
+with t_us_fiscal_start_date as ( 
+    -- Get the very fist us_fiscal_year_start_date in the table   
+    select us_fiscal_year_start_date from dim_date where id_seq = 1
+  ),
+us_fiscal_month_logic as ( 
+    --  Join t_us_fiscal_start_date with every record in dim_date  
+    select 
+      id_seq,
+      -- Substract months from the us_fiscal_year_start_date in the very first record
+      (month - extract(month from t.us_fiscal_year_start_date))+1 new_us_fiscal_month 
+  from 
+    t_us_fiscal_start_date t,
+      dim_date dd
+  order by dd.cal_date
+  )
+update 
+  dim_date 
+  SET us_fiscal_month_seq = t.new_us_fiscal_month 
+  from us_fiscal_month_logic t 
+  where dim_date.id_seq = t.id_seq
+    
+
+--===========================================================================
+-- Update field au_fiscal_quarter_seq. 
+-- The au_fiscal_quarter_seq must correspond to fiscal month number, 
+-- and must increment till the last record in the date dimension table
+
+with 
+au_fiscal_quarter_logic as ( 
+    select 
+      id_seq,
+      -- Divide au_fiscal_month_seq by 3 and round off next whole number
+      ceil(au_fiscal_month_seq/3::decimal) new_au_fiscal_quarter
+  from 
+      dim_date
+  order by cal_date
+  )
+update 
+  dim_date 
+  SET au_fiscal_quarter_seq = t.new_au_fiscal_quarter
+  from au_fiscal_quarter_logic t 
+  where dim_date.id_seq = t.id_seq
+    
+--===========================================================================
+-- Update field us_fiscal_quarter_seq. 
+-- The us_fiscal_quarter_seq must correspond to fiscal month number, 
+-- and must increment till the last record in the date dimension table
+
+with 
+us_fiscal_quarter_logic as ( 
+    select 
+      id_seq,
+      -- Divide us_fiscal_month_seq by 3 and round off next whole number
+      ceil(us_fiscal_month_seq/3::decimal) new_us_fiscal_quarter
+  from 
+      dim_date
+  order by cal_date
+  )
+update 
+  dim_date 
+  SET us_fiscal_quarter_seq = t.new_us_fiscal_quarter
+  from us_fiscal_quarter_logic t 
+  where dim_date.id_seq = t.id_seq
 
 
+
+COMMIT TRANSACTION;
