@@ -41,7 +41,7 @@ Please refer to the inline comments in DateDimension.sql
 1. How are federal holidays calculated?  
    All federal holidays are sourced from 'holidays' Python library  ( https://pypi.org/project/holidays/ )  
    Those missing ones are manually loaded from DateDimensionHoliday.sql.  
-   For US the following holidays were loaded separately - Juneteenth, Good Friday (for US), Easter Sunday, Martin Luther King Jr. Day
+   For US the following holidays were loaded separately - Juneteenth, Good Friday, Easter Sunday, Martin Luther King Jr. Day
 
 2. How is Easter date calculated?  
    All easter dates are based on Western calendar, and is pulled from Python dateutil library ( https://dateutil.readthedocs.io/en/stable/easter.html )
@@ -50,7 +50,7 @@ Please refer to the inline comments in DateDimension.sql
    Yes you can. The script is tested for date range from 1st January 1970 to 31st December 2069. I recommend testing for date ranges outside these.
 
 4. Is it possible to generate holiday list for other countries?  
-   Yes, as long as "Holidays" python library supports it. In "PublicHolidays/main.py" any supported country abbreviation can be added to "countries" list.
+   Yes, as long as "Holidays" python library supports it. In "PublicHolidays/main.py" supported country abbreviation can be added to "countries" list.
 
 5. For the month of February, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated when current year is leap year?  
    Current Date: 2008-02-29 (2008 is a leap year, that has 29 days in February).  
