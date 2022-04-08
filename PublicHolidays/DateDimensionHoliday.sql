@@ -115,6 +115,30 @@ update dim_date set us_is_holiday='Y' where us_holiday_name is not null;
 -- Delete holiday table after date dimension table update
 drop table public.holidays;
 
+-- ------------------------------------------------------------------------------------------------------------
+-- Update business day sequence for AU fiscal calendar
+with seq as (
+  select cal_date ,  		 
+  		 dense_rank() over(order by cal_date) as au_business_day_seq_val
+  from
+  	dim_date where is_weekday='Y' AND au_is_holiday='N'
+  )
+update dim_date set 
+	  au_business_day_seq = au_business_day_seq_val    
+from seq where seq.cal_date = dim_date.cal_date;
+
+-- ------------------------------------------------------------------------------------------------------------
+-- Update business day sequence for US fiscal calendar
+with seq as (
+  select cal_date ,  		 
+  		 dense_rank() over(order by cal_date) as us_business_day_seq_val
+  from
+  	dim_date where is_weekday='Y' AND us_is_holiday='N'
+  )
+update dim_date set 
+	  us_business_day_seq = us_business_day_seq_val    
+from seq where seq.cal_date = dim_date.cal_date;
+
 COMMIT TRANSACTION ;
 
 
