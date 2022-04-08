@@ -51,6 +51,9 @@ CREATE TABLE public.dim_date(
   is_weekday            char(1) NOT NULL,       -- Day is weekday (Y,N)
   day_of_month_suffix   char(2) NOT NULL,       -- st,nd,rd,th based on 1st day of the month
   dod                   date NOT NULL,          -- Day Over Day (Prior Day)
+  business_day_seq      smallint NOT NULL,      -- Number from 1 to total number of records in the date dimension table.
+                                                -- The number is only applicable for ONLY weekdays, doesn't account for public holidays
+                                                -- For public holidays use country specific fields 'au_business_day_seq' and 'us_business_day_seq'
 
   week_of_year          smallint NOT NULL,      -- Week of the Year. 1 to 52,53; the first week starts on the first day of the year
   week_of_year_iso      smallint NOT NULL, 	    -- ISO week number of year (the first Thursday of the new year is in week 1.)
@@ -168,7 +171,8 @@ CREATE TABLE public.dim_date(
   au_fiscal_month_of_quarter  smallint NOT NULL,  -- Month from 1 to 3 for each quarter.
 
   au_fiscal_day_of_year       smallint NOT NULL,  -- 1..365,366
-  
+  au_business_day_seq         smallint,           -- Number from 1 to total number of records in the date dimension table.
+                                                  -- The number is only applicable for weekdays and non-public AU holidays
 
   -- USA fiscal federal calendar - year starts from 1 October and ends the next year on 30 September
   us_fiscal_year            smallint NOT NULL,
@@ -190,7 +194,8 @@ CREATE TABLE public.dim_date(
   us_fiscal_month_of_quarter    smallint NOT NULL,  -- Month from 1 to 3 for each quarter.
 
   us_fiscal_day_of_year         smallint NOT NULL,  -- 1..365,366
-
+  us_business_day_seq           smallint,           -- Number from 1 to total number of records in the date dimension table.
+                                                    -- The number is only applicable for weekdays and non-public US holidays
 
   -- Seasons
   au_season_name varchar(25),   -- AU  - Summer, Autumn, Winter, Spring
@@ -269,8 +274,8 @@ SELECT
         else 'th'
     end as day_of_month_suffix,
 
-    dateadd(day, -1, cal_date ) as dod ,                     -- Get previous day (Day Over Day - DoD)
-
+    dateadd(day, -1, cal_date ) as dod ,      -- Get previous day (Day Over Day - DoD)
+    0 as business_day_seq,                  -- Populated later on with dense rank and criteria
 
     --===========================================================================
     --  Week
@@ -579,7 +584,7 @@ SELECT
     -- Get day count in AU fiscal year by substracting days from AU fiscal year start date
     datediff(day, au_fiscal_year_start_date, cal_date )+1 as au_fiscal_day_of_year,
 
-
+    0 as au_business_day_seq,    -- Populated later on with dense rank and criteria
 
     --===========================================================================
     -- Fiscal federal Year & Quarter USA  - Starts from 1st October and ends on following year 30th September
@@ -639,6 +644,8 @@ SELECT
 
     -- Get day count in USA fiscal year by substracting days from USA fiscal year start date
     datediff(day, us_fiscal_year_start_date, cal_date )+1 as us_fiscal_day_of_year,
+
+    0 as us_business_day_seq,    -- Populated later on with dense rank and criteria
 
   --===========================================================================
     -- Seasons
@@ -707,7 +714,7 @@ with seq as (
   		 dense_rank() over(order by year) 		as year_seq_val,
   
   		 dense_rank() over(order by au_fiscal_year) 	as au_fiscal_year_seq_val,
-  		 dense_rank() over(order by us_fiscal_year) 	as us_fiscal_year_seq_val,
+  		 dense_rank() over(order by us_fiscal_year) 	as us_fiscal_year_seq_val
   from
   	dim_date
   )
@@ -720,9 +727,22 @@ update dim_date set
     year_seq = year_seq_val,
     
     au_fiscal_year_seq = au_fiscal_year_seq_val,    
-    us_fiscal_year_seq = us_fiscal_year_seq_val,
+    us_fiscal_year_seq = us_fiscal_year_seq_val
     
 from seq where seq.cal_date = dim_date.cal_date ;
+
+--===========================================================================
+-- Update business day sequence for general calendar
+with seq as (
+  select cal_date ,  		 
+  		 dense_rank() over(order by cal_date) as business_day_seq_val
+  from
+  	dim_date where is_weekday='Y'  
+  )
+update dim_date set 
+	  business_day_seq = business_day_seq_val    
+from seq where seq.cal_date = dim_date.cal_date ;
+
 
 --===========================================================================
 -- Update field au_fiscal_month_seq. 
@@ -748,7 +768,7 @@ update
   dim_date 
   SET au_fiscal_month_seq = t.new_au_fiscal_month 
   from au_fiscal_month_logic t 
-  where dim_date.id_seq = t.id_seq
+  where dim_date.id_seq = t.id_seq;
 
 --===========================================================================
 -- Update field us_fiscal_month_seq. 
@@ -774,7 +794,7 @@ update
   dim_date 
   SET us_fiscal_month_seq = t.new_us_fiscal_month 
   from us_fiscal_month_logic t 
-  where dim_date.id_seq = t.id_seq
+  where dim_date.id_seq = t.id_seq;
     
 
 --===========================================================================
@@ -796,7 +816,7 @@ update
   dim_date 
   SET au_fiscal_quarter_seq = t.new_au_fiscal_quarter
   from au_fiscal_quarter_logic t 
-  where dim_date.id_seq = t.id_seq
+  where dim_date.id_seq = t.id_seq;
     
 --===========================================================================
 -- Update field us_fiscal_quarter_seq. 
@@ -817,7 +837,7 @@ update
   dim_date 
   SET us_fiscal_quarter_seq = t.new_us_fiscal_quarter
   from us_fiscal_quarter_logic t 
-  where dim_date.id_seq = t.id_seq
+  where dim_date.id_seq = t.id_seq;
 
 
 
