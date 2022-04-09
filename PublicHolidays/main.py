@@ -1,18 +1,19 @@
-# ************************************************************************************************************
-# Pulls federal holidays for US and Australia from 1970-01-01 till 2069-12-31 (100 Years)
-# and creates file named "Holidays.csv" in the same directory as main.py
-# 
-# Author: Abraham
-# Created-on: 21th March 2022
-# Known Issues\Hacks: 
-# For USA, Good friday isn't a federal holiday, though financial instritutions are closed on this date. Logic to handle this is included.
-# ************************************************************************************************************
+"""
+************************************************************************************************************
+Pulls federal holidays for US and Australia from 1970-01-01 till 2069-12-31 (100 Years)
+and creates file named "Holidays.csv" in the same directory as main.py
 
-# Change log:
-# Modified-on: 
-# Changes:
-# ************************************************************************************************************
+Author: Abraham
+Created-on: 21th March 2022
+Known Issues\Hacks: 
+For USA, Good friday isn't a federal holiday, though financial institutions are closed on this date. Logic to handle this is included.
+************************************************************************************************************
 
+Change log:
+Modified-on: 
+Changes:
+************************************************************************************************************
+"""
 
 from datetime import date, timedelta
 from dateutil.easter import *
@@ -33,9 +34,26 @@ def get_csv_header(countries):
     return row_val + "\n"
 
 
-def get_holiday_data(start_date, end_date, countries):
-    # Flag to apply easter and good friday for USA
-    flag_easter_and_good_friday_for_usa = True
+def get_holiday_data(start_date, end_date, countries, flag_easter_and_good_friday_for_usa = True):
+    """
+    Generate the holidays for the given date range and count.
+    For dates without holidays, no record will be present in csv file
+    Parameters
+        ----------
+        start_date : datetime
+            The start date from when the holiday list is to be generated
+        end_date : datetime
+            The end date till when the holiday list is to be generated            
+        countries : list
+            The list of countries for which the holiday list is to be generated
+        flag_easter_and_good_friday_for_usa : bool, optional
+            If Good friday is to be flagged as holiday set this flag
+
+        Returns
+        -------
+        str
+            A concatenated string of comma separated values
+    """  
 
     data = get_csv_header(countries)
     country_holiday_cal = {}
@@ -67,6 +85,7 @@ def get_holiday_data(start_date, end_date, countries):
             else:
                 holiday_names[country_code] = ""
 
+        # Logic to write holidays only if it exists for a date
         if holiday_names["exists"]:
             data += date_val
             for country_code in countries:
