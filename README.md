@@ -58,8 +58,7 @@ Please refer to the inline comments in DateDimension.sql
    'ly_mtd_end_date'   will be '2007-03-01' This is because prior year February had 29 days and current year only 28, which moves the date to next month.
       
 
-6. For the month of February after leap year, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated?  
-    
+6. For the month of February after leap year, how the fields 'ly_mtd_start_date' and 'ly_mtd_end_date' are calculated?      
     Current Date: 2009-02-28 (2009 is a year after leap year, which has only 28 days in February).  
     'ly_mtd_start_date' will be '2009-02-01'  
     'ly_mtd_end_date'   will be '2007-02-29'  
@@ -67,6 +66,8 @@ Please refer to the inline comments in DateDimension.sql
    This may cause skew in reports comparing current month over prior year month, because of a day more.  
    Use 'ly_mtd_end_date_actual' to exactly match the number of days as current month.
 
+7. How to generate state holidays for a specific country?
+   The "Holidays" python package support 'subdiv' parameter for states. https://python-holidays.readthedocs.io/en/latest/api.html
 
 ## Links
 [1] AWS CLI - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html  
