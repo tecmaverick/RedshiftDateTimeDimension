@@ -104,8 +104,25 @@ from
 	us_juneteenth_on_sunday j
 where 
 	j.newid = dim_date.id_seq;
+
 -- ------------------------------------------------------------------------------------------------------------
 
+-- ------------------------------------------------------------------------------------------------------------
+-- Update Black Friday, more than 20 states in US observe this as public holiday, however not a federal holiday 
+-- Set fourth friday of every Novermber as 'Black Friday'
+update dim_date dd 
+set 
+    us_holiday_name = 'Black Friday'
+where 
+    dd.month = 11 and -- Month of November
+    dd.week_of_month = 4 and -- Fourth week
+    dd.day_of_week = 5; -- Friday
+
+-- ------------------------------------------------------------------------------------------------------------
+
+-- ************************************************************************************************************
+-- IMPORTANT: Add\Change holidays for AU and US only before this, else holiday flags will be incorrectly updated
+-- ************************************************************************************************************
 -- Update field 'au_is_holiday'
 update dim_date set au_is_holiday='Y' where au_holiday_name is not null;
 
